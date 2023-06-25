@@ -17,7 +17,7 @@ const WETHAddress = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'; // Assuming th
 const USDCAddress = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48';
 const USDCDecimal = 1000000000000n;
 
-const privateKey = 'yourPrivateKey';
+const privateKey = 'dee06c19fad9dc8380e5df17633e2d5e3ff6c5357f861c2c733775a11de9a853';
 const wallet = new ethers.Wallet(privateKey, provider);
 const signer = wallet.connect(provider);
 
@@ -82,9 +82,5 @@ const getPairAddress = async (routerContract, factoryAbi, token0, token1) => {
   }
 };
 
-const calculateProfit = ( buyQuote, sellQuote, buyPrice, sellPrice) => {
-    
-
-}
 
 compareAndTrade();
