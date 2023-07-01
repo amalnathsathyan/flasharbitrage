@@ -1,51 +1,46 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+// SPDX-License-Identifier: GPL-2.0-or-later
+pragma solidity ^0.8.6;
+pragma abicoder v2;
 
-import { IERC20WithPermit } from "@aave/core-v3/contracts/interfaces/ERC20WithPermit.sol";
-import { IUniswapV2Router02 } from "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02";
+import '@uniswap/v3-periphery/contracts/interfaces/ISwapRouter.sol';
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import 'contracts/IWETH.sol';
 
-contract FlashloanReceiver is IFlashLoanReceiver {
-    address private constant DEX_ADDRESS_1 = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
-    address private constant DEX_ADDRESS_2 = 0xb4315e873dBcf96Ffd0acd8EA43f689D8c20fB30;
+contract uniswapSwap {
+    address public constant faDAI = 0x3ce6A4a2C2Ad484Cd426011F0883E904910CAEef;
+    address public constant faOP = 0x688F927009F8DE48750bC329a998a8a99d0FDe90;
+    address public  constant uniRouter = 0xE592427A0AEce92De3Edee1F18E0157C05861564;
+    uint24 public constant poolFee = 3000;
 
-    constructor() {}
-    
-    function dualDexTrade(
-        address router1,
-        address router2,
-        address token1,
-        uint256 amount
-    ) internal {
-        uint256 startBalance = IERC20WithPermit(token1).balanceOf(address(this));
-        uint256 token2InitialBalance = IERC20WithPermit(getTokenToBuy(router1)).balanceOf(address(this));
-        swap(router1, token1, getTokenToBuy(router1), amount);
-        uint256 token2Balance = IERC20WithPermit(getTokenToBuy(router1)).balanceOf(address(this));
-        uint256 tradeableAmount = token2Balance - token2InitialBalance;
-        swap(router2, getTokenToBuy(router1), token1, tradeableAmount);
-        uint256 endBalance = IERC20WithPermit(token1).balanceOf(address(this));
-        require(endBalance > startBalance, "Trade Reverted, No Profit Made");
+    ISwapRouter public immutable swapRouter = ISwapRouter(uniRouter); 
+
+    constructor() {
+    }
+
+
+    function checkAllowance(address _tokenAddress) public view returns(uint256 _tokenAllowance) {
+        return IERC20(_tokenAddress).allowance(msg.sender,address(this));
     }
     
-    function getTokenToBuy(address router) internal pure returns (address) {
-        // Return the address of the token you want to buy on the specified router
-        // Replace with your desired token address
-        if (router == DEX_ADDRESS_1) {
-            return 0xB163A2819aAF8c06aBF46abA4F41D8e7a2ED214f;
-        } else if (router == DEX_ADDRESS_2) {
-            return 0xB2b7c68F563812d73e9388D89CB92F8cE5Bae6D6;
-        }
-        revert("Invalid router");
-    }
-    
-    function swap(address router, address tokenIn, address tokenOut, uint256 amount) internal {
-        address[] memory path = new address[](2);
-        path[0] = tokenIn;
-        path[1] = tokenOut;
+
+    function swapExactInputSingle(uint256 amountIn, address tokenToSell, address tokenToBuy) public returns (uint256 amountOut) {
         
-        // Approve the tokenIn for spending
-        IERC20WithPermit(tokenIn).approve(router, amount);
         
-        // Perform the token swap
-        IUniswapV2Router02(router).swapExactTokensForTokens(amount, 0, path, address(this), block.timestamp);
+        IERC20(tokenToSell).approve(address(swapRouter), amountIn);
+        
+        ISwapRouter.ExactInputSingleParams memory params =
+            ISwapRouter.ExactInputSingleParams({
+                tokenIn: tokenToSell,
+                tokenOut: tokenToBuy,
+                fee: poolFee,
+                recipient: address(this),
+                deadline: block.timestamp,
+                amountIn: amountIn,
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
+            });
+
+        amountOut = swapRouter.exactInputSingle(params);
+        return amountOut;  
     }
 }

@@ -11,6 +11,8 @@ async function main() {
   const flashloanReceiver = await FlashloanReceiver.deploy();
   await flashloanReceiver.deployed();
 
+  const fr = ethers.utils.hexlify('10000')
+
   console.log(`FlashloanReceiver deployed to address: ${flashloanReceiver.address}`);
 }
 
